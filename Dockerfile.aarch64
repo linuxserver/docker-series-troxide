@@ -39,7 +39,8 @@ RUN \
   chmod +x /usr/bin/series-troxide && \
   apt-get update && \
   apt-get install -y --no-install-recommends \
-    libgtk-3-0 && \
+    libgtk-3-0 \
+    mesa-vulkan-drivers && \
   echo "**** openbox tweaks ****" && \
   sed -i \
     's|</applications>|  <application title="Series Troxide" type="normal">\n    <maximized>yes</maximized>\n  </application>\n</applications>|' \
