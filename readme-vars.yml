@@ -7,39 +7,35 @@ project_logo: "https://raw.githubusercontent.com/linuxserver/docker-templates/ma
 project_blurb: "[Series Troxide]({{ project_url }}) a Simple and Modern Series Tracker"
 project_lsio_github_repo_url: "https://github.com/linuxserver/docker-{{ project_name }}"
 project_blurb_optional_extras_enabled: false
-
 # supported architectures
 available_architectures:
-  - { arch: "{{ arch_x86_64 }}", tag: "latest"}
-  - { arch: "{{ arch_arm64 }}", tag: "arm64v8-latest"}
-
+  - {arch: "{{ arch_x86_64 }}", tag: "latest"}
+  - {arch: "{{ arch_arm64 }}", tag: "arm64v8-latest"}
 # development version
 development_versions: false
-
 # container parameters
 common_param_env_vars_enabled: true
 param_container_name: "{{ project_name }}"
 param_usage_include_env: true
 param_env_vars:
-  - { env_var: "TZ", env_value: "Europe/London", desc: "Specify a timezone to use EG Europe/London." }
+  - {env_var: "TZ", env_value: "Europe/London", desc: "Specify a timezone to use EG Europe/London."}
 param_usage_include_vols: true
 param_volumes:
-  - { vol_path: "/config", vol_host_path: "/path/to/config", desc: "Users home directory in the container, stores local files and settings" }
+  - {vol_path: "/config", vol_host_path: "/path/to/config", desc: "Users home directory in the container, stores local files and settings"}
 param_usage_include_ports: true
 param_ports:
-  - { external_port: "3000", internal_port: "3000", port_desc: "Series Troxide desktop gui." }
-  - { external_port: "3001", internal_port: "3001", port_desc: "HTTPS Series Troxide desktop gui." }
+  - {external_port: "3000", internal_port: "3000", port_desc: "Series Troxide desktop gui."}
+  - {external_port: "3001", internal_port: "3001", port_desc: "HTTPS Series Troxide desktop gui."}
 custom_params:
-  - { name: "shm-size", name_compose: "shm_size", value: "1gb",desc: "This is required for the application to run properly." }
-
+  - {name: "shm-size", name_compose: "shm_size", value: "1gb", desc: "This is required for the application to run properly."}
 # application setup block
 app_setup_block_enabled: true
 app_setup_block: |
   The application can be accessed at:
-  
+
   * http://yourhost:3000/
   * https://yourhost:3001/
-  
+
   ### Options in all KasmVNC based GUI containers
 
   This container is based on [Docker Baseimage KasmVNC](https://github.com/linuxserver/docker-baseimage-kasmvnc) which means there are additional environment variables and run configurations to enable or disable specific functionality.
@@ -59,13 +55,74 @@ app_setup_block: |
   | DRINODE | If mounting in /dev/dri for [DRI3 GPU Acceleration](https://www.kasmweb.com/kasmvnc/docs/master/gpu_acceleration.html) allows you to specify the device to use IE `/dev/dri/renderD128` |
 
   #### Optional run configurations
-  
+
   | Variable | Description |
   | :----: | --- |
   | `--privileged` | Will start a Docker in Docker (DinD) setup inside the container to use docker in an isolated environment. For increased performance mount the Docker directory inside the container to the host IE `-v /home/user/docker-data:/var/lib/docker`. |
   | `-v /var/run/docker.sock:/var/run/docker.sock` | Mount in the host level Docker socket to either interact with it via CLI or use Docker enabled applications. |
   | `--device /dev/dri:/dev/dri` | Mount a GPU into the container, this can be used in conjunction with the `DRINODE` environment variable to leverage a host video card for GPU accelerated appplications. Only **Open Source** drivers are supported IE (Intel,AMDGPU,Radeon,ATI,Nouveau) |
-
+# init diagram
+init_diagram: |
+  "series-troxide:latest": {
+    docker-mods
+    base {
+      fix-attr +\nlegacy cont-init
+    }
+    docker-mods -> base
+    legacy-services
+    custom services
+    init-services -> legacy-services
+    init-services -> custom services
+    custom services -> legacy-services
+    legacy-services -> ci-service-check
+    init-migrations -> init-adduser
+    init-kasmvnc-end -> init-config
+    init-os-end -> init-config
+    init-config -> init-config-end
+    init-os-end -> init-crontab-config
+    init-mods-end -> init-custom-files
+    base -> init-envfile
+    init-os-end -> init-kasmvnc
+    init-nginx -> init-kasmvnc-config
+    init-video -> init-kasmvnc-end
+    base -> init-migrations
+    base -> init-mods
+    init-config-end -> init-mods
+    init-mods -> init-mods-end
+    init-mods-package-install -> init-mods-end
+    init-mods -> init-mods-package-install
+    init-kasmvnc -> init-nginx
+    base -> init-os-end
+    init-adduser -> init-os-end
+    init-envfile -> init-os-end
+    init-migrations -> init-os-end
+    init-custom-files -> init-services
+    init-mods-end -> init-services
+    init-kasmvnc-config -> init-video
+    init-services -> svc-cron
+    svc-cron -> legacy-services
+    init-services -> svc-de
+    svc-nginx -> svc-de
+    svc-de -> legacy-services
+    init-services -> svc-docker
+    svc-de -> svc-docker
+    svc-docker -> legacy-services
+    init-services -> svc-kasmvnc
+    svc-pulseaudio -> svc-kasmvnc
+    svc-kasmvnc -> legacy-services
+    init-services -> svc-kclient
+    svc-kasmvnc -> svc-kclient
+    svc-kclient -> legacy-services
+    init-services -> svc-nginx
+    svc-kclient -> svc-nginx
+    svc-nginx -> legacy-services
+    init-services -> svc-pulseaudio
+    svc-pulseaudio -> legacy-services
+  }
+  Base Images: {
+    "baseimage-kasmvnc:debianbookworm" <- "baseimage-debian:bookworm"
+  }
+  "series-troxide:latest" <- Base Images
 # changelog
 changelogs:
-  - { date: "16.09.23:", desc: "Initial release." }
+  - {date: "16.09.23:", desc: "Initial release."}
